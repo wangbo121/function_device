@@ -25,6 +25,7 @@
 
 #include "uart.h"
 //#include "digitalradio.h"
+#include "rocket.h"
 
 char *uart_dev[]={"/dev/ttyO0",\
 		          "/dev/ttyO1",\
@@ -286,6 +287,9 @@ void uart_recvbuf_and_process(int uart_no)
 			/*
 			 * 串口处理程序写在这里
 			 */
+			case UART_ROCKET:
+				read_rocket_data(&read_rocket,(unsigned char *)buf, read_len);
+				break;
 #if 1
 			/*
 				case UART_RADIO:

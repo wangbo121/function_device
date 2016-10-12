@@ -14,12 +14,17 @@
 #include <semaphore.h>
 
 #include "maintask.h"
+#include "save_data.h"
 
 int main()
 {
 	/*thread: maintask*/
 	pthread_t maintask_pthrd = 0;
 	int ret=0;
+
+	/*create log file*/
+	fd_rocket_air_sounding_log=create_log_file(ROCKET_AIR_SOUNDING_FILE);
+
 
 	/*
 	 * 主线程
@@ -36,6 +41,7 @@ int main()
 	}
    pthread_join (maintask_pthrd, NULL);
 
+   close_log_file(fd_rocket_air_sounding_log);
    return 0;
 }
 
