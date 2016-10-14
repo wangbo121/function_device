@@ -67,10 +67,10 @@ void loopslow(void)
 		save_data_to_log(fd_realtime_log,realtime_save_data,realtime_len);
 #endif
 		//为什么%h这个参数编译的时候会有警告呢
-		//rocket_air_sounding_len=sprintf(rocket_air_sounding_save_data,"%d\n",air_sounding_rocket.temp);
+		//没有%h，只有%hu，一开是写错了
 
 #if 1
-		rocket_air_sounding_len=sprintf(rocket_air_sounding_save_data,"%h,%hu,%hu,%hu,%hu,%d,%d,%d,%hhu\n",\
+		rocket_air_sounding_len=sprintf(rocket_air_sounding_save_data,"%hd,%hu,%hu,%hu,%hu,%d,%d,%d,%hhu\n",\
 				                        air_sounding_rocket.temp,\
 										air_sounding_rocket.humidity,\
 										air_sounding_rocket.air_pressure,\
