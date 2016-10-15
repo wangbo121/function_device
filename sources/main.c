@@ -38,6 +38,10 @@ int main()
 	rocket_uart_init(UART_ROCKET);
 	/*create log file*/
 	fd_rocket_air_sounding_log=create_log_file(ROCKET_AIR_SOUNDING_FILE);
+
+	//发射火箭指令
+	start_launch_rocket();
+
 #endif
 #ifdef __UART_AWS_
 	/*create log file*/

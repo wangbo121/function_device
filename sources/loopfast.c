@@ -10,6 +10,8 @@
 
 #include "maintask.h"
 #include "loopfast.h"
+#include "rocket.h"
+#include "global.h"
 
 sem_t sem_loopfast;
 
@@ -24,6 +26,12 @@ void loopfast(void)
 		/*
 		 * 需要在快循环执行的程序，写在这里
 		 */
+
+		if(global_bool.bool_rocket_request_attitude)
+		{
+		    write_rocket_attitude();
+		}
+
 
 		main_task.loopfast_cnt++;
 

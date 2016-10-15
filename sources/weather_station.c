@@ -33,7 +33,7 @@ T_AWS read_aws;
 
 static int aws_recv_state = 0;
 static int aws_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_property);
-static int decode_aws_data(T_AWS aws,char *buf);
+static int decode_aws_data(T_AWS *ptr_aws,char *buf);
 static unsigned short get_crc16(unsigned char *buf, unsigned short len);
 
 int aws_uart_init(unsigned int uart_num)
@@ -141,13 +141,15 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 
 		    crc16=get_crc16(check_crc_buf,1+_pack_recv_len);
 		    if(_check_crc_high * 256 +_check_crc_low == crc16)
+		    //if(1)//测试时先不校验
 		    {
 				//处理气象站数据
 		        printf("正确接收气象站数据,准备处理\n");
 				printf("_pack_recv_len=%d\n",_pack_recv_len);
-				printf("read_aws占用%d个字节\n",sizeof(read_aws));
+				printf("read_aws占用%d个字节\n",sizeof(T_AWS));
+				//printf("read_aws占用%d个字节\n",sizeof(short));
 				//memcpy(&read_aws, _pack_recv_buf_frame, _pack_recv_len);
-				decode_aws_data(read_aws,(char *)_pack_recv_buf);
+				decode_aws_data(ptr_read_aws,(char *)_pack_recv_buf);
 			}
 			else
 			{
@@ -188,153 +190,168 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 #define position25 68//海温5
 #define position26 70//校验
 
-int decode_aws_data(T_AWS aws,char *buf)
+int decode_aws_data(T_AWS *ptr_aws,char *buf)
 {
 	unsigned char size_byte;
-	unsigned char index;
+	unsigned char index_i;//指示数据的字节位置
 	//unsigned char temp[20];
 	char temp[20];
 	char buf_frame[125]={0};
 
+	int i;
+	static int len=70;
+
 	buf_frame[0]=0x7E;
 	memcpy(&buf_frame[1],buf,69);//需要69个字节
 
+    /*显示收到的数据*/
+#if 1
+    printf("aws data buf=\n");
+    for(i=0;i<len;i++)
+    {
+        printf("%c",buf_frame[i]);
+    }
+    printf("\n");
+#endif
+
 	//日期：年
-	index=position1;
+	index_i=position1;
 	size_byte=position2-position1;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.year=atoi(temp);
+	ptr_aws->year=atoi(temp);
+	//printf("year=%hu\n",ptr_aws->year);
 
 	//月
-	index=position2;
+	index_i=position2;
 	size_byte=position3-position2;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.month=atoi(temp);
+	ptr_aws->month=atoi(temp);
+	//printf("month=%hhu\n",ptr_aws->month);
 
 	//日
-	index=position3;
+	index_i=position3;
 	size_byte=position4-position3;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.day=atoi(temp);
+	ptr_aws->day=atoi(temp);
 
 	//时间 时
-	index=position4;
+	index_i=position4;
 	size_byte=position5-position4;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.hour=atoi(temp);
+	ptr_aws->hour=atoi(temp);
 
 	//分
-	index=position5;
+	index_i=position5;
 	size_byte=position6-position5;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.minute=atoi(temp);
+	ptr_aws->minute=atoi(temp);
 
 	//秒
-	index=position6;
+	index_i=position6;
 	size_byte=position7-position6;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.second=atoi(temp);
+	ptr_aws->second=atoi(temp);
 
 	//东 或者 西
-	index=position7;
-	aws.east_west=buf_frame[index];
+	index_i=position7;
+	ptr_aws->east_west=buf_frame[index_i];
 
-	index=position8;
+	index_i=position8;
 	size_byte=position9-position8;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.longitude=atoi(temp);
+	ptr_aws->longitude=atoi(temp);
 
-	index=position9;
-	aws.north_south=buf_frame[index];
+	index_i=position9;
+	ptr_aws->north_south=buf_frame[index_i];
 
-	index=position10;
+	index_i=position10;
 	size_byte=position11-position10;
-	memcpy(temp,buf_frame+index,size_byte);
+	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
-	aws.latitude=atoi(temp);
+	ptr_aws->latitude=atoi(temp);
 /*************************************************************/
 	//高度
-	index=position11;
+	index_i=position11;
 	size_byte=position12-position11;
-	memcpy(&aws.height,buf_frame+index,size_byte);
-	aws.height=__bswap_16(aws.height);
+	memcpy(&ptr_aws->height,buf_frame+index_i,size_byte);
+	ptr_aws->height=__bswap_16(ptr_aws->height);
 	//温度
-	index=position12;
+	index_i=position12;
 	size_byte=position13-position12;
-	memcpy(&aws.temperature,buf_frame+index,size_byte);
-	aws.temperature=__bswap_16(aws.temperature);
+	memcpy(&ptr_aws->temperature,buf_frame+index_i,size_byte);
+	ptr_aws->temperature=__bswap_16(ptr_aws->temperature);
 	//湿度
-	index=position13;
+	index_i=position13;
 	size_byte=position14-position13;
-	memcpy(&aws.humidity,buf_frame+index,size_byte);
-	aws.humidity=__bswap_16(aws.humidity);
+	memcpy(&ptr_aws->humidity,buf_frame+index_i,size_byte);
+	ptr_aws->humidity=__bswap_16(ptr_aws->humidity);
 	//风速
-	index=position14;
+	index_i=position14;
 	size_byte=position15-position14;
-	memcpy(&aws.wind_speed,buf_frame+index,size_byte);
-	aws.wind_speed=__bswap_16(aws.wind_speed);
+	memcpy(&ptr_aws->wind_speed,buf_frame+index_i,size_byte);
+	ptr_aws->wind_speed=__bswap_16(ptr_aws->wind_speed);
 	//风向
-	index=position15;
+	index_i=position15;
 	size_byte=position16-position15;
-	memcpy(&aws.wind_dir,buf_frame+index,size_byte);
-	aws.wind_dir=__bswap_16(aws.wind_dir);
+	memcpy(&ptr_aws->wind_dir,buf_frame+index_i,size_byte);
+	ptr_aws->wind_dir=__bswap_16(ptr_aws->wind_dir);
 	//气压
-	index=position16;
+	index_i=position16;
 	size_byte=position17-position16;
-	memcpy(&aws.air_press,buf_frame+index,size_byte);
-	aws.air_press=__bswap_16(aws.air_press);
+	memcpy(&ptr_aws->air_press,buf_frame+index_i,size_byte);
+	ptr_aws->air_press=__bswap_16(ptr_aws->air_press);
 	//辐射1
-	index=position17;
+	index_i=position17;
 	size_byte=position18-position17;
-	memcpy(&aws.radiation1,buf_frame+index,size_byte);
-	aws.radiation1=__bswap_16(aws.radiation1);
+	memcpy(&ptr_aws->radiation1,buf_frame+index_i,size_byte);
+	ptr_aws->radiation1=__bswap_16(ptr_aws->radiation1);
 	//辐射2
-	index=position18;
+	index_i=position18;
 	size_byte=position19-position18;
-	memcpy(&aws.radiation2,buf_frame+index,size_byte);
-	aws.radiation2=__bswap_16(aws.radiation2);
+	memcpy(&ptr_aws->radiation2,buf_frame+index_i,size_byte);
+	ptr_aws->radiation2=__bswap_16(ptr_aws->radiation2);
 	//盐海温
-	index=position19;
+	index_i=position19;
 	size_byte=position20-position19;
-	memcpy(&aws.salt_sea_temp,buf_frame+index,size_byte);
-	aws.salt_sea_temp=__bswap_32(aws.salt_sea_temp);
+	memcpy(&ptr_aws->salt_sea_temp,buf_frame+index_i,size_byte);
+	ptr_aws->salt_sea_temp=__bswap_32(ptr_aws->salt_sea_temp);
 	//电导率
-	index=position20;
+	index_i=position20;
 	size_byte=position21-position20;
-	memcpy(&aws.conductivity,buf_frame+index,size_byte);
-	aws.conductivity=__bswap_32(aws.conductivity);
+	memcpy(&ptr_aws->conductivity,buf_frame+index_i,size_byte);
+	ptr_aws->conductivity=__bswap_32(ptr_aws->conductivity);
 	//海温1
-	index=position21;
+	index_i=position21;
 	size_byte=position22-position21;
-	memcpy(&aws.sea_temp1,buf_frame+index,size_byte);
-	aws.sea_temp1=__bswap_16(aws.sea_temp1);
+	memcpy(&ptr_aws->sea_temp1,buf_frame+index_i,size_byte);
+	ptr_aws->sea_temp1=__bswap_16(ptr_aws->sea_temp1);
 	//海温2
-	index=position22;
+	index_i=position22;
 	size_byte=position23-position22;
-	memcpy(&aws.sea_temp2,buf_frame+index,size_byte);
-	aws.sea_temp2=__bswap_16(aws.sea_temp2);
+	memcpy(&ptr_aws->sea_temp2,buf_frame+index_i,size_byte);
+	ptr_aws->sea_temp2=__bswap_16(ptr_aws->sea_temp2);
 	//海温3
-	index=position23;
+	index_i=position23;
 	size_byte=position24-position23;
-	memcpy(&aws.sea_temp3,buf_frame+index,size_byte);
-	aws.sea_temp3=__bswap_16(aws.sea_temp3);
+	memcpy(&ptr_aws->sea_temp3,buf_frame+index_i,size_byte);
+	ptr_aws->sea_temp3=__bswap_16(ptr_aws->sea_temp3);
 	//海温4
-	index=position24;
+	index_i=position24;
 	size_byte=position25-position24;
-	memcpy(&aws.sea_temp4,buf_frame+index,size_byte);
-	aws.sea_temp4=__bswap_16(aws.sea_temp4);
+	memcpy(&ptr_aws->sea_temp4,buf_frame+index_i,size_byte);
+	ptr_aws->sea_temp4=__bswap_16(ptr_aws->sea_temp4);
 	//海温5
-	index=position25;
+	index_i=position25;
 	size_byte=position26-position25;
-	memcpy(&aws.sea_temp5,buf_frame+index,size_byte);
-	aws.sea_temp5=__bswap_16(aws.sea_temp5);
+	memcpy(&ptr_aws->sea_temp5,buf_frame+index_i,size_byte);
+	ptr_aws->sea_temp5=__bswap_16(ptr_aws->sea_temp5);
 
 	return 0;
 }
@@ -412,13 +429,13 @@ unsigned short get_crc16(unsigned char *buf, unsigned short len)
 
     unsigned char crc_high = 0xFF;
     unsigned char crc_low = 0xFF;
-    unsigned index = 0;
+    unsigned char index_i = 0;
 
     while (len--)
     {
-        index = crc_high ^ *buf++;
-        crc_high = crc_low ^ all_crc_high[index];
-        crc_low = all_crc_low[index];
+        index_i = crc_high ^ *buf++;
+        crc_high = crc_low ^ all_crc_high[index_i];
+        crc_low = all_crc_low[index_i];
     }
 
     return (unsigned short)((unsigned short)crc_high << 8 | crc_low);
