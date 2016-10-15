@@ -8,7 +8,7 @@
 #ifndef HEADERS_UART_H_
 #define HEADERS_UART_H_
 
-#define UART_DEV_TOTAL 10
+#define UART_DEV_TOTAL 20
 #define UART_BUF_SIZE 512
 
 struct T_UART_DEVICE_PROPERTY

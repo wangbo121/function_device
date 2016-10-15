@@ -11,8 +11,6 @@
 #define GPS_LOG_FILE "gps.txt"
 #define REALTIME_LOG_FILE "realtime.txt"
 */
-#define ROCKET_AIR_SOUNDING_FILE "rocket_air.txt"
-
 
 
 int create_log_file(char *log_name);

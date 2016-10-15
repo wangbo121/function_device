@@ -14,7 +14,9 @@
 #include "utilityfunctions.h"
 
 #include "save_data.h"
+#include "global.h"
 #include "rocket.h"
+#include "weather_station.h"
 
 sem_t sem_loopslow;
 
@@ -22,6 +24,10 @@ void loopslow(void)
 {
 	static char rocket_air_sounding_save_data[24]={0};
 	static int rocket_air_sounding_len=0;
+	static char air_weather_station_save_data[256]={0};//256随意设置的，大于需要保存的数据即可
+	static int air_weather_station_len=0;
+
+
 	printf("Enter the loopslow...\n");
 
 	while(main_task.loopslow_permission)
@@ -82,6 +88,26 @@ void loopslow(void)
 										air_sounding_rocket.number);
 #endif
 		save_data_to_log(fd_rocket_air_sounding_log,rocket_air_sounding_save_data,rocket_air_sounding_len);
+
+		air_weather_station_len=sprintf(air_weather_station_save_data,\
+		                                "%hu,%hhu,%hhu,"
+		                                "%hhu,%hhu,%hhu,"
+		                                "%hhu,%u,"
+		                                "%hhu,%u,"
+		                                "%hu,%hu,%hu,%hu,%hu,%hu,%hu,%hu,"
+		                                "%u,%u,"
+		                                "%hu,%hu,%hu,%hu,%hu\n",\
+		                                read_aws.year,read_aws.month,read_aws.day,\
+		                                read_aws.hour,read_aws.minute,read_aws.second,\
+		                                read_aws.east_west,read_aws.longitude,\
+		                                read_aws.north_south,read_aws.latitude,\
+		                                read_aws.height,read_aws.temperature,read_aws.humidity,read_aws.wind_speed,read_aws.wind_dir,read_aws.air_press,read_aws.radiation1,read_aws.radiation2,\
+		                                read_aws.salt_sea_temp,read_aws.conductivity,\
+		                                read_aws.sea_temp1,read_aws.sea_temp2,read_aws.sea_temp3,read_aws.sea_temp4,read_aws.sea_temp5);
+		save_data_to_log(fd_air_weather_station_log,air_weather_station_save_data,air_weather_station_len);
+
+
+
 
 
 

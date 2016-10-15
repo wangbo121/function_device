@@ -26,6 +26,7 @@
 #include "uart.h"
 //#include "digitalradio.h"
 #include "rocket.h"
+#include "weather_station.h"
 
 char *uart_dev[]={"/dev/ttyO0",\
 		          "/dev/ttyO1",\
@@ -37,7 +38,7 @@ char *uart_dev[]={"/dev/ttyO0",\
 				  "/dev/ttyUSB1",\
 				  "/dev/ttyUSB2"};
 
-int uart_fd[10]={0};
+int uart_fd[UART_DEV_TOTAL]={0};
 struct T_UART_DEVICE_PROPERTY uart_device_property;
 
 static pthread_t uart_pthrd[]={0};
@@ -290,33 +291,10 @@ void uart_recvbuf_and_process(int uart_no)
 			case UART_ROCKET:
 				read_rocket_data(&read_rocket,(unsigned char *)buf, read_len);
 				break;
-#if 1
-			/*
-				case UART_RADIO:
-				read_radio_data((unsigned char *)buf, read_len);
-				break;
-				*/
-#else
-				case UART_GPS:
-				read_gps_data(buf, read_len);
-				break;
-
-				case UART_MODBUS:
-				read_modbus_data((unsigned char *)buf, read_len);
-				break;
-				/*
-			case UART_IMU:
-				getIMUData(buf, read_len);
-				break;
-			case UART_PWM:
-				break;
 			case UART_AWS:
-				getAWSData(buf, read_len);
-			case UART_POWER:
-				getPowerData(buf, read_len);
-				break;
-				*/
-#endif
+			    read_aws_data(&read_aws,(unsigned char *)buf, read_len);
+			    break;
+
 				default:
 				break;
 			}

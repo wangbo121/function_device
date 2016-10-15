@@ -31,6 +31,7 @@ typedef struct
 	unsigned char north_south;
 	unsigned int latitude;
 
+	//8+2+5
 	unsigned short height;
 	unsigned short temperature;
 	unsigned short humidity;//湿度

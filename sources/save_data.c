@@ -22,7 +22,6 @@
 int fd_GPS_log=0;
 int fd_realtime_log=0;
 */
-int fd_rocket_air_sounding_log=0;
 
 
 int create_log_file(char *log_name)

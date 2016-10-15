@@ -29,4 +29,16 @@ typedef struct
 extern T_GLOBAL_BOOL global_bool;
 
 
+//#define __UART_ROCKET_
+#define __UART_AWS_
+
+/*保存文件的文件名和文件句柄（文件描述符fd）*/
+#define ROCKET_AIR_SOUNDING_FILE "rocket_air.txt"
+#define AIR_WEATHER_STATION "weather_station.txt"
+extern int fd_rocket_air_sounding_log;
+extern int fd_air_weather_station_log;
+
+
+
+
 #endif /* HEADERS_GLOBAL_H_ */
