@@ -140,21 +140,30 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 		    memcpy(&check_crc_buf[1],_pack_recv_buf,_pack_recv_len);
 
 		    crc16=get_crc16(check_crc_buf,1+_pack_recv_len);
+		    crc16=__bswap_16(crc16);
 		    if(_check_crc_high * 256 +_check_crc_low == crc16)
 		    //if(1)//测试时先不校验
 		    {
 				//处理气象站数据
-		        printf("正确接收气象站数据,准备处理\n");
-				printf("_pack_recv_len=%d\n",_pack_recv_len);
-				printf("read_aws占用%d个字节\n",sizeof(T_AWS));
+		        printf("正确接收气象站数据,准备处理,crc校验正确\n");
+				//printf("_pack_recv_len=%d\n",_pack_recv_len);
+				//printf("read_aws占用%d个字节\n",sizeof(T_AWS));
 				//printf("read_aws占用%d个字节\n",sizeof(short));
 				//memcpy(&read_aws, _pack_recv_buf_frame, _pack_recv_len);
 				decode_aws_data(ptr_read_aws,(char *)_pack_recv_buf);
+				aws_recv_state = 0;//没有校验，气象站数据中的时分秒中的秒总是一个数，不变化，校验很重要，而且校验处理完后，还需要aws_recv_state = 0
+		        /*if(_length>0)
+		        {
+		            decode_aws_data(ptr_read_aws,(char *)_pack_recv_buf);
+
+		        }*/
+		        break;
 			}
 			else
 			{
 			    printf("crc校验不正确，重新接收\n");
 				aws_recv_state = 0;
+				break;
 			}
 		}
 	}
@@ -205,9 +214,10 @@ int decode_aws_data(T_AWS *ptr_aws,char *buf)
 	memcpy(&buf_frame[1],buf,69);//需要69个字节
 
     /*显示收到的数据*/
-#if 1
+#if 0
     printf("aws data buf=\n");
-    for(i=0;i<len;i++)
+    //for(i=0;i<len;i++)
+    for(i=0;i<36;i++)
     {
         printf("%c",buf_frame[i]);
     }
@@ -257,6 +267,8 @@ int decode_aws_data(T_AWS *ptr_aws,char *buf)
 	memcpy(temp,buf_frame+index_i,size_byte);
 	temp[size_byte]='\0';
 	ptr_aws->second=atoi(temp);
+	//printf("ptr_aws->second=%hhu\n",ptr_aws->second);
+	printf("ptr_aws->second=%s\n",temp);
 
 	//东 或者 西
 	index_i=position7;
@@ -281,77 +293,77 @@ int decode_aws_data(T_AWS *ptr_aws,char *buf)
 	index_i=position11;
 	size_byte=position12-position11;
 	memcpy(&ptr_aws->height,buf_frame+index_i,size_byte);
-	ptr_aws->height=__bswap_16(ptr_aws->height);
+	//ptr_aws->height=__bswap_16(ptr_aws->height);
 	//温度
 	index_i=position12;
 	size_byte=position13-position12;
 	memcpy(&ptr_aws->temperature,buf_frame+index_i,size_byte);
-	ptr_aws->temperature=__bswap_16(ptr_aws->temperature);
+	//ptr_aws->temperature=__bswap_16(ptr_aws->temperature);
 	//湿度
 	index_i=position13;
 	size_byte=position14-position13;
 	memcpy(&ptr_aws->humidity,buf_frame+index_i,size_byte);
-	ptr_aws->humidity=__bswap_16(ptr_aws->humidity);
+	//ptr_aws->humidity=__bswap_16(ptr_aws->humidity);
 	//风速
 	index_i=position14;
 	size_byte=position15-position14;
 	memcpy(&ptr_aws->wind_speed,buf_frame+index_i,size_byte);
-	ptr_aws->wind_speed=__bswap_16(ptr_aws->wind_speed);
+	//ptr_aws->wind_speed=__bswap_16(ptr_aws->wind_speed);
 	//风向
 	index_i=position15;
 	size_byte=position16-position15;
 	memcpy(&ptr_aws->wind_dir,buf_frame+index_i,size_byte);
-	ptr_aws->wind_dir=__bswap_16(ptr_aws->wind_dir);
+	//ptr_aws->wind_dir=__bswap_16(ptr_aws->wind_dir);
 	//气压
 	index_i=position16;
 	size_byte=position17-position16;
 	memcpy(&ptr_aws->air_press,buf_frame+index_i,size_byte);
-	ptr_aws->air_press=__bswap_16(ptr_aws->air_press);
+	//ptr_aws->air_press=__bswap_16(ptr_aws->air_press);
 	//辐射1
 	index_i=position17;
 	size_byte=position18-position17;
 	memcpy(&ptr_aws->radiation1,buf_frame+index_i,size_byte);
-	ptr_aws->radiation1=__bswap_16(ptr_aws->radiation1);
+	//ptr_aws->radiation1=__bswap_16(ptr_aws->radiation1);
 	//辐射2
 	index_i=position18;
 	size_byte=position19-position18;
 	memcpy(&ptr_aws->radiation2,buf_frame+index_i,size_byte);
-	ptr_aws->radiation2=__bswap_16(ptr_aws->radiation2);
+	//ptr_aws->radiation2=__bswap_16(ptr_aws->radiation2);
 	//盐海温
 	index_i=position19;
 	size_byte=position20-position19;
 	memcpy(&ptr_aws->salt_sea_temp,buf_frame+index_i,size_byte);
-	ptr_aws->salt_sea_temp=__bswap_32(ptr_aws->salt_sea_temp);
+	//ptr_aws->salt_sea_temp=__bswap_32(ptr_aws->salt_sea_temp);
 	//电导率
 	index_i=position20;
 	size_byte=position21-position20;
 	memcpy(&ptr_aws->conductivity,buf_frame+index_i,size_byte);
-	ptr_aws->conductivity=__bswap_32(ptr_aws->conductivity);
+	//ptr_aws->conductivity=__bswap_32(ptr_aws->conductivity);
 	//海温1
 	index_i=position21;
 	size_byte=position22-position21;
 	memcpy(&ptr_aws->sea_temp1,buf_frame+index_i,size_byte);
-	ptr_aws->sea_temp1=__bswap_16(ptr_aws->sea_temp1);
+	//ptr_aws->sea_temp1=__bswap_16(ptr_aws->sea_temp1);
 	//海温2
 	index_i=position22;
 	size_byte=position23-position22;
 	memcpy(&ptr_aws->sea_temp2,buf_frame+index_i,size_byte);
-	ptr_aws->sea_temp2=__bswap_16(ptr_aws->sea_temp2);
+	//ptr_aws->sea_temp2=__bswap_16(ptr_aws->sea_temp2);
 	//海温3
 	index_i=position23;
 	size_byte=position24-position23;
 	memcpy(&ptr_aws->sea_temp3,buf_frame+index_i,size_byte);
-	ptr_aws->sea_temp3=__bswap_16(ptr_aws->sea_temp3);
+	//ptr_aws->sea_temp3=__bswap_16(ptr_aws->sea_temp3);
 	//海温4
 	index_i=position24;
 	size_byte=position25-position24;
 	memcpy(&ptr_aws->sea_temp4,buf_frame+index_i,size_byte);
-	ptr_aws->sea_temp4=__bswap_16(ptr_aws->sea_temp4);
+	//ptr_aws->sea_temp4=__bswap_16(ptr_aws->sea_temp4);
 	//海温5
 	index_i=position25;
 	size_byte=position26-position25;
 	memcpy(&ptr_aws->sea_temp5,buf_frame+index_i,size_byte);
-	ptr_aws->sea_temp5=__bswap_16(ptr_aws->sea_temp5);
+	//ptr_aws->sea_temp5=__bswap_16(ptr_aws->sea_temp5);
 
 	return 0;
 }

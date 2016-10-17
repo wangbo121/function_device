@@ -31,9 +31,6 @@ int main()
 	pthread_t maintask_pthrd = 0;
 	int ret=0;
 
-	/*create log file*/
-	fd_air_weather_station_log=create_log_file(AIR_WEATHER_STATION);
-
 #ifdef __UART_ROCKET_
 	rocket_uart_init(UART_ROCKET);
 	/*create log file*/
@@ -41,7 +38,6 @@ int main()
 
 	//发射火箭指令
 	start_launch_rocket();
-
 #endif
 #ifdef __UART_AWS_
 	/*create log file*/
@@ -63,17 +59,14 @@ int main()
 	}
    pthread_join (maintask_pthrd, NULL);
 
-   close_log_file(fd_rocket_air_sounding_log);
-   close_log_file(fd_air_weather_station_log);
-
 #ifdef __UART_ROCKET_
+    close_log_file(fd_rocket_air_sounding_log);
     rocket_uart_close(UART_ROCKET);
 #endif
 #ifdef __UART_AWS_
+    close_log_file(fd_air_weather_station_log);
     aws_uart_close(UART_AWS);
 #endif
-
-
 
    return 0;
 }

@@ -276,11 +276,17 @@ void uart_recvbuf_and_process(int uart_no)
 		 * 如果时间改小后不能满足gps或者电台的数据接收了，那么就把这一据放在switch case语句中
 		 */
 		if(-1!=(read_len=read_uart_data(uart_fd[uart_no], buf, 200, sizeof(buf)-1)))
-		//if( (read_len=read_uart_data(uart_fd[uart_no], buf, 200, sizeof(buf)-1)) >0 )
+		//if( (read_len=read_uart_data(uart_fd[uart_no], buf, 200, sizeof(buf)-1)) >0 )//大气所测试1017
 		{
 			//printf("read_len=%d\n",read_len);
 			//buf[read_len]='\0';
 			//printf("%s\n",buf);
+
+		    //大气物理研究所 测试气象站
+		    //printf("read_len=%d\n",read_len);
+            //buf[read_len]='\0';
+		    //buf[36]='\0';
+            //printf("%s\n",buf);
 
 			uart_recv_cnt[uart_no] += read_len;
 			switch (uart_no)
