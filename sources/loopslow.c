@@ -40,7 +40,7 @@ void loopslow(void)
 		/*
 		 * 需要在慢循环执行的程序，写在这里
 		 */
-		printf("hello i am loopslow!!!\n");
+		//printf("hello i am loopslow!!!\n");
 
 		/*保存实时数据*/
 		/*

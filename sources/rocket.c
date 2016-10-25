@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /*转换int或者short的字节顺序，该程序arm平台为大端模式，地面站x86架构为小端模式*/
 #include <byteswap.h>
@@ -75,6 +76,89 @@ int rocket_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_propert
 	return 0;
 }
 
+#define position0  0
+#define position1  2
+#define position2  4
+#define position3  6
+#define position4  8
+#define position5  10
+#define position6  14
+#define position7  18
+#define position8  22
+#define position9  23
+
+int decode_air_sounding_data(T_AIR_SOUNDING *ptr_air_sounding,char *buf)
+{
+    unsigned char size_byte;
+    unsigned char index_i;//指示数据的字节位置
+    char temp[20];
+    char buf_frame[125]={0};
+
+    int i;
+    static int len=23;
+
+    //buf的第一个数据是温度，最后一个是编号，不包括校验
+    memcpy(&buf_frame[0],buf,len);//需要len个字节
+
+    /*显示收到的数据*/
+#if 0
+    printf("aws data buf=\n");
+    //for(i=0;i<len;i++)
+    for(i=0;i<36;i++)
+    {
+        printf("%c",buf_frame[i]);
+    }
+    printf("\n");
+#endif
+
+    index_i=position0;
+    size_byte=position1-position0;
+    memcpy(&ptr_air_sounding->temp,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->temp=%d\n",ptr_air_sounding->temp);
+
+    index_i=position1;
+    size_byte=position2-position1;
+    memcpy(&ptr_air_sounding->humidity,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->humidity=%d\n",ptr_air_sounding->humidity);
+
+    index_i=position2;
+    size_byte=position3-position2;
+    memcpy(&ptr_air_sounding->air_pressure,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->air_pressure=%d\n",ptr_air_sounding->air_pressure);
+
+    index_i=position3;
+    size_byte=position4-position3;
+    memcpy(&ptr_air_sounding->wind_speed,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->wind_speed=%d\n",ptr_air_sounding->wind_speed);
+
+    index_i=position4;
+    size_byte=position5-position4;
+    memcpy(&ptr_air_sounding->wind_dir,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->wind_dir=%d\n",ptr_air_sounding->wind_dir);
+
+    index_i=position5;
+    size_byte=position6-position5;
+    memcpy(&ptr_air_sounding->longitude,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->longitude=%d\n",ptr_air_sounding->longitude);
+
+    index_i=position6;
+    size_byte=position7-position6;
+    memcpy(&ptr_air_sounding->latitude,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->latitude=%d\n",ptr_air_sounding->latitude);
+
+    index_i=position7;
+    size_byte=position8-position7;
+    memcpy(&ptr_air_sounding->height,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->height=%d\n",ptr_air_sounding->height);
+
+    index_i=position8;
+    size_byte=position9-position8;
+    memcpy(&ptr_air_sounding->number,buf_frame+index_i,size_byte);
+    printf("ptr_air_sounding->number=%d\n",ptr_air_sounding->number);
+
+    return 0;
+}
+
 int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int len)
 {
 	static unsigned char _buffer[ROCKET_RECV_BUF_LEN];
@@ -94,11 +178,11 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 	memcpy(_buffer, buf, len);
 
 	/*显示收到的数据*/
-#if 0
+#if 1
 	printf("rocket data buf=\n");
 	for(i=0;i<len;i++)
 	{
-		printf("%c",buf[i]);
+		printf("%x,",buf[i]);
 	}
 	printf("\n");
 #endif
@@ -108,6 +192,7 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 	for (i = 0; i<_length; i++)
 	{
 		c = _buffer[i];
+		//printf("state=%d\n",rocket_recv_state);
 		switch (rocket_recv_state)
 		{
 		case ROCKET_RECV_HEAD1:
@@ -198,8 +283,14 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 					printf("_pack_recv_len=%d\n",_pack_recv_len);
 					printf("air_sounding_rocket占用%d个字节\n",sizeof(T_AIR_SOUNDING));
 					//按道理说air_sounding_rocket这里应该用指针的，而不是直接用变量
-					memcpy(&air_sounding_rocket, _pack_recv_buf, _pack_recv_len);
+
+
+					decode_air_sounding_data(&air_sounding_rocket,(char *)_pack_recv_buf);
+
+
 					global_bool.bool_get_rocket_ari_sounding=TRUE;
+#if 0
+					memcpy(&air_sounding_rocket, _pack_recv_buf, _pack_recv_len);
 					//设置了global_bool.bool_get_rocket_ari_sounding，接下来应该是解析数据包的
 					//但是因为air_sounding_rocket是数据接收包，所以没有解析，直接赋值给了&air_sounding_rocket
 					//但是游客能出现字节顺序不一致的情况，所以采用了下面的交换位置
@@ -214,7 +305,7 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 					air_sounding_rocket.longitude=__bswap_32(air_sounding_rocket.longitude);
 					air_sounding_rocket.latitude=__bswap_32(air_sounding_rocket.latitude);
 					air_sounding_rocket.height=__bswap_32(air_sounding_rocket.height);
-
+#endif
 					rocket_recv_state = 0;
 					break;
 
@@ -240,6 +331,10 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 #define pilot2rocket_has_receive_success 0x05
 #define pilot2rocket_has_finished_sounding 0x06
 #define pilot2rocket_please_repeat 0x07
+
+#define pilot2rocket_start_charge_air_sounding 0x08
+#define pilot2rocket_has_received_charge_start 0x09
+#define pilot2rocket_has_received_charge_done 0x0A
 
 int write_rocket_cmd(T_ROCKET *ptr_write_rocket)
 {
@@ -267,7 +362,11 @@ int write_rocket_cmd(T_ROCKET *ptr_write_rocket)
 	buf[12]=0xEE;
 	buf[13]=0xEE;
 
+	buf[14]='\0';
+	//printf("发送的=%s\n",buf);
+
 	send_uart_data(uart_fd[UART_ROCKET], (char *)buf, len);
+	printf("发送的=%s\n",buf);
 
 	return 0;
 }
@@ -277,7 +376,8 @@ int write_rocket_data(char *buf,int len)
 
     unsigned char send_buf[256]={0};
     int frame_len;//帧长度,参数len是数据长度
-    unsigned char check=0;
+    //unsigned char check=0;
+    unsigned short check=0;
     int i;
 
     for(i=0;i<len;i++)
@@ -285,28 +385,38 @@ int write_rocket_data(char *buf,int len)
         check+=buf[i];
     }
 
-    frame_len=len+4+2+4;//数据长度+4帧头+2长度+1校验+4帧尾
-    printf("rocket frame len=%d\n",frame_len);
+    frame_len=len+4+2+2+4;//数据长度+4帧头+2长度+2校验+4帧尾
+    //printf("rocket frame len=%d\n",frame_len);
 
     send_buf[0]=0xEB;
     send_buf[1]=0xEB;
     send_buf[2]=0xEB;
     send_buf[3]=0xEB;
 
-    send_buf[4]=len;
+    //send_buf[4]=len;
+    send_buf[4]=frame_len;
     send_buf[5]=0x00;
 
     memcpy(&send_buf[6],buf,len);
 
-    send_buf[len+6]=check;
+    //send_buf[len+6]=check;
+    memcpy(&send_buf[len+6],&check,2);
 
     //帧尾
-    send_buf[len+7]=0xEE;
     send_buf[len+8]=0xEE;
     send_buf[len+9]=0xEE;
     send_buf[len+10]=0xEE;
+    send_buf[len+11]=0xEE;
 
-    send_uart_data(uart_fd[UART_ROCKET], (char *)send_buf, len);
+
+    //send_uart_data(uart_fd[UART_ROCKET], (char *)send_buf, len);
+    send_uart_data(uart_fd[UART_ROCKET], (char *)send_buf, frame_len);
+#if 0
+    for(i=0;i<frame_len;i++)
+    {
+        printf("send_buf=%x\n",send_buf[i]);
+    }
+#endif
 
     return 0;
 }
@@ -333,13 +443,16 @@ int write_rocket_attitude()
 int start_launch_rocket()
 {
     write_rocket.function_num=pilot2rocket_start_launch;
+    write_rocket.information=0x00;
     write_rocket_cmd(&write_rocket);
 
 	return 0;
 }
+
 int reply_stop_send_attitude()
 {
 	write_rocket.function_num=pilot2rocket_has_stop_send_attitude;
+	write_rocket.information=0x00;
 	write_rocket_cmd(&write_rocket);
 
 	return 0;
@@ -347,30 +460,91 @@ int reply_stop_send_attitude()
 int reply_no_window()
 {
 	write_rocket.function_num=pilot2rocket_has_receive_fail_launch_no_window;
+	write_rocket.information=0x00;
 	write_rocket_cmd(&write_rocket);
 
 	return 0;
 }
-int reply_no_available_rocket()
+int reply_fail_no_available_rocket()
 {
 	write_rocket.function_num=pilot2rocket_has_receive_fail_launch_no_rocket;
+	write_rocket.information=0x01;
 	write_rocket_cmd(&write_rocket);
 
 	return 0;
 }
-int reply_received_launch_success_report()
+int reply_fail_device_error()
+{
+    write_rocket.function_num=pilot2rocket_has_receive_fail_launch_no_rocket;
+    write_rocket.information=0x02;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+
+int reply_received_launch_success1_report()
 {
 	write_rocket.function_num=pilot2rocket_has_receive_success;
+	write_rocket.information=0x01;
 	write_rocket_cmd(&write_rocket);
 
 	return 0;
 }
-int reply_received_finished_sounding()
+int reply_received_launch_success2_report()
+{
+    write_rocket.function_num=pilot2rocket_has_receive_success;
+    write_rocket.information=0x02;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+int reply_received_launch_success3_report()
+{
+    write_rocket.function_num=pilot2rocket_has_receive_success;
+    write_rocket.information=0x03;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+int reply_received_launch_success4_report()
+{
+    write_rocket.function_num=pilot2rocket_has_receive_success;
+    write_rocket.information=0x04;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+int reply_received_finished_sounding1()
 {
 	write_rocket.function_num=pilot2rocket_has_finished_sounding;
+	write_rocket.information=0x01;
 	write_rocket_cmd(&write_rocket);
 
 	return 0;
+}
+int reply_received_finished_sounding2()
+{
+    write_rocket.function_num=pilot2rocket_has_finished_sounding;
+    write_rocket.information=0x02;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+int reply_received_finished_sounding3()
+{
+    write_rocket.function_num=pilot2rocket_has_finished_sounding;
+    write_rocket.information=0x03;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+int reply_received_finished_sounding4()
+{
+    write_rocket.function_num=pilot2rocket_has_finished_sounding;
+    write_rocket.information=0x04;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
 }
 int reply_please_repeat()
 {
@@ -378,6 +552,39 @@ int reply_please_repeat()
 	write_rocket_cmd(&write_rocket);
 
 	return 0;
+}
+
+int start_charege_air_sounding()
+{
+    write_rocket.function_num=pilot2rocket_start_charge_air_sounding;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
+}
+
+int reply_has_received_number2_start()
+{
+    write_rocket.function_num=pilot2rocket_has_received_charge_start;
+    write_rocket.information=0x02;
+    write_rocket_cmd(&write_rocket);
+    return 0;
+}
+
+int reply_has_received_number3_start()
+{
+    write_rocket.function_num=pilot2rocket_has_received_charge_start;
+    write_rocket.information=0x03;
+    write_rocket_cmd(&write_rocket);
+    return 0;
+}
+
+int reply_has_received_charge_done()
+{
+    write_rocket.function_num=pilot2rocket_has_received_charge_done;
+    write_rocket.information=0x00;
+    write_rocket_cmd(&write_rocket);
+
+    return 0;
 }
 
 #define rocket2pilot_is_passing_launch_request 0x01
@@ -408,7 +615,7 @@ int decode_rocket_command(T_ROCKET *ptr_read_rocket)
 		/*既然火箭请求姿态数据，那么现在就应该发送姿态数据给火箭*/
 	    printf("rocket-->pilot:请求发送姿态数据\n");
 		global_bool.bool_rocket_request_attitude=TRUE;
-		//write_rocket_attitude();
+		write_rocket_attitude();
 		break;
 	case rocket2pilot_request_stop_attitude:
 		/*请求停止姿态数据*/

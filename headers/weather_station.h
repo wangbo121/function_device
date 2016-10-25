@@ -10,7 +10,7 @@
 
 //#define UART_AWS 6///dev/ttyUSB0
 //#define UART_AWS 7///dev/ttyUSB1
-#define UART_AWS 3///dev/ttyO1
+#define UART_AWS 5//
 #define UART_AWS_BAUD 9600
 #define UART_AWS_DATABITS 8 //8 data bit
 #define UART_AWS_STOPBITS 1 //1 stop bit

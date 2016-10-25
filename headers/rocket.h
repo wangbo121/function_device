@@ -12,7 +12,9 @@
 #define rocket_device_address 0x02
 
 //#define UART_ROCKET 6///dev/ttyUSB0
-#define UART_ROCKET 7///dev/ttyUSB1
+//#define UART_ROCKET 7///dev/ttyUSB1
+#define UART_ROCKET 3///dev/ttyO3
+
 #define UART_ROCKET_BAUD 9600
 #define UART_ROCKET_DATABITS 8 //8 data bit
 #define UART_ROCKET_STOPBITS 1 //1 stop bit
@@ -30,7 +32,11 @@ typedef struct
 {
     //这里我是知道我的笔记本和arm板的short都是2字节，int都是4字节，机器是2字节对齐的，所以可以用memcpy到某一个结构
     //如果不知道具体机器的short和int字节数，那就注意可能出现错误
+    //1025 发现arm板子是4字节对齐的
 	short temp;/*[*0.1度] -1000--1000*/
+
+    unsigned char number;
+    unsigned char invalid;//只是为了字节对齐，没有任何作用
 
 	unsigned short humidity;/*[*0.1度] 0--1000*/
 	unsigned short air_pressure;/*[*0.1百帕] 3000--12000*/
@@ -40,9 +46,9 @@ typedef struct
 	int longitude;/*[*10e-6度]*/
 	int latitude;/*[*10e-6度]*/
 	int height;/*[*0.1度] -100--100000*/
-
-	unsigned char number;
-	unsigned char invalid;//只是为了字节对齐，没有任何作用
+//
+//    unsigned char number;
+//    unsigned char invalid;//只是为了字节对齐，没有任何作用
 }T_AIR_SOUNDING;
 
 typedef struct
@@ -75,6 +81,8 @@ int write_rocket_cmd(T_ROCKET *ptr_write_rocket);
 
 int start_launch_rocket();
 int write_rocket_attitude();
+
+int decode_air_sounding_data(T_AIR_SOUNDING *ptr_air_sounding,char *buf);
 
 int rocket_uart_close(unsigned int uart_num);
 
