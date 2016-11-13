@@ -24,6 +24,7 @@
 #include "rocket.h"
 #include "weather_station.h"
 #include "utilityfunctions.h"
+#include "udp.h"
 
 /*定义保存文件描述符*/
 int fd_rocket_air_sounding_log=0;
@@ -45,6 +46,9 @@ int main()
 	/*create log file*/
 	fd_air_weather_station_log=create_log_file(AIR_WEATHER_STATION);
 
+#endif
+#ifdef __UDP_
+	open_udp_dev(IP_MASTER, UDP_SERVER_PORT, UDP_SERVER_PORT);
 #endif
 #if 1
     int seconds=0;

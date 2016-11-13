@@ -16,6 +16,7 @@
 
 #include "rocket.h"
 #include "weather_station.h"
+#include "udp.h"
 
 sem_t sem_loopslow;
 
@@ -34,6 +35,10 @@ void loopslow(void)
 		main_task.loopslow_cnt++;
 
 		sem_wait(&sem_loopslow);     /*等待信号量*/
+
+		//通过udp把气象站和火箭的数据发送给主控
+		char test[]={"wangbo"};
+		send_udp_data((unsigned char *)test, sizeof(test));
 
 		/*
 		 * 需要在慢循环执行的程序，写在这里

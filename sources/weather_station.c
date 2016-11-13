@@ -84,7 +84,7 @@ int read_aws_data(unsigned char *buf, unsigned int len)
 	memcpy(_buffer, buf, len);
 
 	/*显示收到的数据*/
-#if 1
+#if 0
 	printf("aws data buf len=%d:",len);
 	for(i=0;i<len;i++)
 	{

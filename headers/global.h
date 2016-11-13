@@ -29,6 +29,7 @@ extern T_GLOBAL_BOOL global_bool;
 
 #define __UART_ROCKET_
 #define __UART_AWS_
+#define __UDP_
 
 /*保存文件的文件名和文件句柄（文件描述符fd）*/
 #define ROCKET_ROCKET_AIR_SOUNDING_FILE "rocket_air.txt"
@@ -41,7 +42,8 @@ extern int fd_air_weather_station_log;
 #define UART_AWS       "/dev/ttyO4"
 #define UART_ROCKET    "/dev/ttyO3"
 
-#define IP_MASTER "10.10.80.1"
+//#define IP_MASTER "10.10.80.1"//给主控板发送
+#define IP_MASTER "10.10.80.2"//给自己发送
 #define IP_SLAVER "10.10.80.2"
 #define UDP_SERVER_PORT 7500
 
