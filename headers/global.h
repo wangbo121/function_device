@@ -41,6 +41,7 @@ extern int fd_air_weather_station_log;
 //#define UART_ROCKET    "/dev/ttyO4"//这是文档上的，但是却是错误的
 #define UART_AWS       "/dev/ttyO4"
 #define UART_ROCKET    "/dev/ttyO3"
+#define UART_MODBUS "/dev/ttyO1"
 
 #define IP_MASTER "10.10.80.1"//给主控板发送
 //#define IP_MASTER "10.10.80.2"//给自己发送

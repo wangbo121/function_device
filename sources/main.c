@@ -26,6 +26,9 @@
 #include "utilityfunctions.h"
 #include "udp.h"
 
+#include "modbus_power_supply.h"
+#include "modbus_toggle_discharge.h"
+
 /*定义保存文件描述符*/
 int fd_rocket_air_sounding_log=0;
 int fd_air_weather_station_log=0;
@@ -47,9 +50,21 @@ int main()
 	fd_air_weather_station_log=create_log_file(AIR_WEATHER_STATION);
 
 #endif
+
 #ifdef __UDP_
 	open_udp_dev(IP_MASTER, UDP_SERVER_PORT, UDP_SERVER_PORT);
 #endif
+
+	/*
+     * 设置充电机初始状态
+     */
+    set_init_power_supply();
+
+    /*
+     * 设置切换器初始状态
+     */
+    set_init_toggle_discharge();
+
 #if 1
     int seconds=0;
     int mseconds=MAINTASK_TICK_TIME*(1e3);/*每个tick为20毫秒，也就是20000微秒,mseconds是微秒的意思*/
