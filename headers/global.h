@@ -42,8 +42,8 @@ extern int fd_air_weather_station_log;
 #define UART_AWS       "/dev/ttyO4"
 #define UART_ROCKET    "/dev/ttyO3"
 
-//#define IP_MASTER "10.10.80.1"//给主控板发送
-#define IP_MASTER "10.10.80.2"//给自己发送
+#define IP_MASTER "10.10.80.1"//给主控板发送
+//#define IP_MASTER "10.10.80.2"//给自己发送
 #define IP_SLAVER "10.10.80.2"
 #define UDP_SERVER_PORT 7500
 
