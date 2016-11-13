@@ -32,7 +32,6 @@ void loopfast(void)
 		    write_rocket_attitude();
 		}
 
-
 		main_task.loopfast_cnt++;
 
 		if(main_task.loopfast_cnt>=MAX_LOOPFAST_TICK)

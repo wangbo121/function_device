@@ -15,14 +15,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-
-
 #include "save_data.h"
-/*
-int fd_GPS_log=0;
-int fd_realtime_log=0;
-*/
-
 
 int create_log_file(char *log_name)
 {
@@ -64,6 +57,7 @@ int save_data_to_log(int fd_log,char *string,int len)
 
 	return write_len;
 }
+
 int close_log_file(int fd_log)
 {
 	if(fd_log)

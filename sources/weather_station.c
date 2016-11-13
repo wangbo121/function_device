@@ -7,7 +7,7 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>//atoi
+#include <stdlib.h>/*atoi*/
 #include <string.h>
 
 /*转换int或者short的字节顺序，该程序arm平台为大端模式，地面站x86架构为小端模式*/
@@ -17,7 +17,8 @@
 #include <unistd.h>
 
 #include "uart.h"
-#include "utilityfunctions.h"
+#include "global.h"
+//#include "utilityfunctions.h"
 
 #include "weather_station.h"
 
@@ -32,41 +33,34 @@
 T_AWS read_aws;
 
 static int aws_recv_state = 0;
-static int aws_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_property);
 static int decode_aws_data(T_AWS *ptr_aws,char *buf);
 static unsigned short get_crc16(unsigned char *buf, unsigned short len);
 
-int aws_uart_init(unsigned int uart_num)
+int aws_uart_init()
 {
-	uart_device_property.uart_num=uart_num;
-	uart_device_property.baudrate=UART_AWS_BAUD;
-	uart_device_property.databits=UART_AWS_DATABITS;
-	uart_device_property.parity=UART_AWS_PARITY;
-	uart_device_property.stopbits=UART_AWS_STOPBITS;
+    uart_device.uart_name=UART_AWS;
 
-	aws_uart_init_real(&uart_device_property);
+    uart_device.baudrate=UART_AWS_BAUD;
+    uart_device.databits=UART_AWS_DATABITS;
+    uart_device.parity=UART_AWS_PARITY;
+    uart_device.stopbits=UART_AWS_STOPBITS;
+
+    uart_device.uart_num=open_uart_dev(uart_device.uart_name);
+
+    uart_device.ptr_fun=read_aws_data;
+
+    set_uart_opt( uart_device.uart_name, \
+                  uart_device.baudrate,\
+                  uart_device.databits,\
+                  uart_device.parity,\
+                  uart_device.stopbits);
+
+    create_uart_pthread(&uart_device);
 
 	return 0;
 }
 
-static int aws_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_property)
-{
-	if(-1!=(uart_fd[ptr_uart_device_property->uart_num]=open_uart_dev(uart_fd[ptr_uart_device_property->uart_num], ptr_uart_device_property->uart_num)))
-	{
-		printf("uart_fd[UART_AWS]=%d\n",uart_fd[ptr_uart_device_property->uart_num]);
-		set_uart_opt( uart_fd[ptr_uart_device_property->uart_num], \
-					  ptr_uart_device_property->baudrate,\
-					  ptr_uart_device_property->databits,\
-					  ptr_uart_device_property->parity,\
-					  ptr_uart_device_property->stopbits);
-
-		uart_device_pthread(ptr_uart_device_property->uart_num);
-	}
-
-	return 0;
-}
-
-int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
+int read_aws_data(unsigned char *buf, unsigned int len)
 {
 	static unsigned char _buffer[AWS_RECV_BUF_LEN];
 
@@ -83,7 +77,6 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 
 	unsigned short crc16;
 
-
 	int _length;
 	int i = 0;
 	unsigned char c;
@@ -91,11 +84,11 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 	memcpy(_buffer, buf, len);
 
 	/*显示收到的数据*/
-#if 0
-	printf("aws data buf=\n");
+#if 1
+	printf("aws data buf len=%d:",len);
 	for(i=0;i<len;i++)
 	{
-		printf("%c",buf[i]);
+		printf("%x ",buf[i]);
 	}
 	printf("\n");
 #endif
@@ -140,9 +133,8 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 		    memcpy(&check_crc_buf[1],_pack_recv_buf,_pack_recv_len);
 
 		    crc16=get_crc16(check_crc_buf,1+_pack_recv_len);
-		    crc16=__bswap_16(crc16);
+		    crc16=__bswap_16(crc16);//在淮南测试这个是需要调换顺序的，不怀疑，模拟机上的字节顺序不太一样
 		    if(_check_crc_high * 256 +_check_crc_low == crc16)
-		    //if(1)//测试时先不校验
 		    {
 				//处理气象站数据
 		        printf("正确接收气象站数据,准备处理,crc校验正确\n");
@@ -150,13 +142,9 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 				//printf("read_aws占用%d个字节\n",sizeof(T_AWS));
 				//printf("read_aws占用%d个字节\n",sizeof(short));
 				//memcpy(&read_aws, _pack_recv_buf_frame, _pack_recv_len);
-				decode_aws_data(ptr_read_aws,(char *)_pack_recv_buf);
+				decode_aws_data(&read_aws,(char *)_pack_recv_buf);
 				aws_recv_state = 0;//没有校验，气象站数据中的时分秒中的秒总是一个数，不变化，校验很重要，而且校验处理完后，还需要aws_recv_state = 0
-		        /*if(_length>0)
-		        {
-		            decode_aws_data(ptr_read_aws,(char *)_pack_recv_buf);
 
-		        }*/
 		        break;
 			}
 			else
@@ -169,6 +157,11 @@ int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len)
 	}
 
 	return 0;
+}
+
+int write_aws_data(unsigned char *buf, unsigned int len)
+{
+    return 0;
 }
 
 #define position0  0
@@ -207,14 +200,15 @@ int decode_aws_data(T_AWS *ptr_aws,char *buf)
 	char temp[20];
 	char buf_frame[125]={0};
 
-	int i;
-	static int len=70;
+	//static int len=70;
+	static int len=69;
 
 	buf_frame[0]=0x7E;
-	memcpy(&buf_frame[1],buf,69);//需要69个字节
+	memcpy(&buf_frame[1],buf,len);//需要69个字节
 
     /*显示收到的数据*/
 #if 0
+    int i;
     printf("aws data buf=\n");
     //for(i=0;i<len;i++)
     for(i=0;i<36;i++)
@@ -369,9 +363,10 @@ int decode_aws_data(T_AWS *ptr_aws,char *buf)
 }
 
 
-int aws_uart_close(unsigned int uart_num)
+int aws_uart_close()
 {
-	close(uart_fd[uart_num]);
+    uart_device.uart_name=UART_AWS;
+    close_uart_dev(uart_device.uart_name);
 
 	return 0;
 }

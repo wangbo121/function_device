@@ -16,10 +16,9 @@
 #include <unistd.h>
 
 #include "uart.h"
-#include "utilityfunctions.h"
+#include "global.h"
 
 #include "rocket.h"
-#include "global.h"
 
 #define ROCKET_RECV_BUF_LEN 512
 
@@ -29,49 +28,42 @@
 #define ROCKET_RECV_HEAD4    3
 
 #define ROCKET_RECV_LEN1     4
-#define ROCKET_RECV_LEN2    5
+#define ROCKET_RECV_LEN2     5
 #define ROCKET_RECV_DATA     6
 #define ROCKET_RECV_CHECKSUM 7
 
+/*2种协议的火箭数据包*/
 #define TYPE_COMMAND 1
 #define TYPE_AIR_SOUNDING 2//探空数据
 
 T_ROCKET read_rocket;
 T_ROCKET write_rocket;
-T_AIR_SOUNDING air_sounding_rocket;
+T_ROCKET_AIR_SOUNDING rocket_air_sounding;
 T_ROCKET_ATTITUDE rocket_attitude;
 
 static int rocket_recv_state = 0;
-static int rocket_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_property);
 static int decode_rocket_command(T_ROCKET *ptr_read_rocket);
 
-int rocket_uart_init(unsigned int uart_num)
+int rocket_uart_init()
 {
-	uart_device_property.uart_num=uart_num;
-	uart_device_property.baudrate=UART_ROCKET_BAUD;
-	uart_device_property.databits=UART_ROCKET_DATABITS;
-	uart_device_property.parity=UART_ROCKET_PARITY;
-	uart_device_property.stopbits=UART_ROCKET_STOPBITS;
+	uart_device.uart_name=UART_ROCKET;
 
-	rocket_uart_init_real(&uart_device_property);
+    uart_device.baudrate=UART_ROCKET_BAUD;
+    uart_device.databits=UART_ROCKET_DATABITS;
+    uart_device.parity=UART_ROCKET_PARITY;
+    uart_device.stopbits=UART_ROCKET_STOPBITS;
 
-	return 0;
-}
+    uart_device.uart_num=open_uart_dev(uart_device.uart_name);
 
-int rocket_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_property)
-{
+    uart_device.ptr_fun=read_rocket_data;
 
-	if(-1!=(uart_fd[ptr_uart_device_property->uart_num]=open_uart_dev(uart_fd[ptr_uart_device_property->uart_num], ptr_uart_device_property->uart_num)))
-	{
-		printf("uart_fd[UART_ROCKET]=%d\n",uart_fd[ptr_uart_device_property->uart_num]);
-		set_uart_opt( uart_fd[ptr_uart_device_property->uart_num], \
-					  ptr_uart_device_property->baudrate,\
-					  ptr_uart_device_property->databits,\
-					  ptr_uart_device_property->parity,\
-					  ptr_uart_device_property->stopbits);
+    set_uart_opt( uart_device.uart_name, \
+                  uart_device.baudrate,\
+                  uart_device.databits,\
+                  uart_device.parity,\
+                  uart_device.stopbits);
 
-		uart_device_pthread(ptr_uart_device_property->uart_num);
-	}
+    create_uart_pthread(&uart_device);
 
 	return 0;
 }
@@ -86,22 +78,20 @@ int rocket_uart_init_real(struct T_UART_DEVICE_PROPERTY *ptr_uart_device_propert
 #define position7  18
 #define position8  22
 #define position9  23
-
-int decode_air_sounding_data(T_AIR_SOUNDING *ptr_air_sounding,char *buf)
+int decode_rocket_air_sounding_data(T_ROCKET_AIR_SOUNDING *ptr_rocket_air_sounding,char *buf)
 {
     unsigned char size_byte;
     unsigned char index_i;//指示数据的字节位置
-    char temp[20];
     char buf_frame[125]={0};
 
-    int i;
-    static int len=23;
+    static int len=23;//火箭探空数据包，实际传递的信息，从温度开始到编号截至，总共23个字节
 
     //buf的第一个数据是温度，最后一个是编号，不包括校验
     memcpy(&buf_frame[0],buf,len);//需要len个字节
 
     /*显示收到的数据*/
 #if 0
+    int i=0;
     printf("aws data buf=\n");
     //for(i=0;i<len;i++)
     for(i=0;i<36;i++)
@@ -113,53 +103,53 @@ int decode_air_sounding_data(T_AIR_SOUNDING *ptr_air_sounding,char *buf)
 
     index_i=position0;
     size_byte=position1-position0;
-    memcpy(&ptr_air_sounding->temp,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->temp=%d\n",ptr_air_sounding->temp);
+    memcpy(&ptr_rocket_air_sounding->temp,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->temp=%d\n",ptr_rocket_air_sounding->temp);
 
     index_i=position1;
     size_byte=position2-position1;
-    memcpy(&ptr_air_sounding->humidity,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->humidity=%d\n",ptr_air_sounding->humidity);
+    memcpy(&ptr_rocket_air_sounding->humidity,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->humidity=%d\n",ptr_rocket_air_sounding->humidity);
 
     index_i=position2;
     size_byte=position3-position2;
-    memcpy(&ptr_air_sounding->air_pressure,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->air_pressure=%d\n",ptr_air_sounding->air_pressure);
+    memcpy(&ptr_rocket_air_sounding->air_pressure,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->air_pressure=%d\n",ptr_rocket_air_sounding->air_pressure);
 
     index_i=position3;
     size_byte=position4-position3;
-    memcpy(&ptr_air_sounding->wind_speed,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->wind_speed=%d\n",ptr_air_sounding->wind_speed);
+    memcpy(&ptr_rocket_air_sounding->wind_speed,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->wind_speed=%d\n",ptr_rocket_air_sounding->wind_speed);
 
     index_i=position4;
     size_byte=position5-position4;
-    memcpy(&ptr_air_sounding->wind_dir,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->wind_dir=%d\n",ptr_air_sounding->wind_dir);
+    memcpy(&ptr_rocket_air_sounding->wind_dir,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->wind_dir=%d\n",ptr_rocket_air_sounding->wind_dir);
 
     index_i=position5;
     size_byte=position6-position5;
-    memcpy(&ptr_air_sounding->longitude,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->longitude=%d\n",ptr_air_sounding->longitude);
+    memcpy(&ptr_rocket_air_sounding->longitude,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->longitude=%d\n",ptr_rocket_air_sounding->longitude);
 
     index_i=position6;
     size_byte=position7-position6;
-    memcpy(&ptr_air_sounding->latitude,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->latitude=%d\n",ptr_air_sounding->latitude);
+    memcpy(&ptr_rocket_air_sounding->latitude,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->latitude=%d\n",ptr_rocket_air_sounding->latitude);
 
     index_i=position7;
     size_byte=position8-position7;
-    memcpy(&ptr_air_sounding->height,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->height=%d\n",ptr_air_sounding->height);
+    memcpy(&ptr_rocket_air_sounding->height,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->height=%d\n",ptr_rocket_air_sounding->height);
 
     index_i=position8;
     size_byte=position9-position8;
-    memcpy(&ptr_air_sounding->number,buf_frame+index_i,size_byte);
-    printf("ptr_air_sounding->number=%d\n",ptr_air_sounding->number);
+    memcpy(&ptr_rocket_air_sounding->number,buf_frame+index_i,size_byte);
+    printf("ptr_rocket_air_sounding->number=%d\n",ptr_rocket_air_sounding->number);
 
     return 0;
 }
 
-int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int len)
+int read_rocket_data(unsigned char *buf, unsigned int len)
 {
 	static unsigned char _buffer[ROCKET_RECV_BUF_LEN];
 
@@ -235,7 +225,7 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 			break;
 		case ROCKET_RECV_LEN1:
 			//_pack_recv_len = c;
-			_pack_recv_len = c -10 -1;//10=4+2+2帧头+长度+帧尾 1是校验位 剩下的是数据位长度
+			_pack_recv_len = c -10 -1;//10=4+2+4 即帧头4+长度2+帧尾4 1是校验位 剩下的是数据位长度
 			rocket_recv_state = ROCKET_RECV_LEN2;
 			if(c==0x0E)//如果收到的字符c表示的长度为14，则是命令包
 			{
@@ -271,40 +261,37 @@ int read_rocket_data(T_ROCKET *ptr_read_rocket,unsigned char *buf, unsigned int 
 					/*处理指令数据包*/
 					printf("_pack_recv_len=%d\n",_pack_recv_len);
 					printf("read_rocket占用%d个字节\n",sizeof(T_ROCKET));
-					memcpy(ptr_read_rocket, _pack_recv_buf, _pack_recv_len);
+					/*按照惯例这里应该是decode函数，但是因为read_rocket是4个单字节组成的数据包，用memcpy就可以准确解析*/
+					memcpy(&read_rocket, _pack_recv_buf, _pack_recv_len);
 					global_bool.bool_get_rocket_command=TRUE;
 					//解析指令数据包
-					decode_rocket_command(ptr_read_rocket);
+					decode_rocket_command(&read_rocket);
 
 					rocket_recv_state = 0;
 					break;
 				case TYPE_AIR_SOUNDING:
 					/*处理探空数传数据包*/
 					printf("_pack_recv_len=%d\n",_pack_recv_len);
-					printf("air_sounding_rocket占用%d个字节\n",sizeof(T_AIR_SOUNDING));
-					//按道理说air_sounding_rocket这里应该用指针的，而不是直接用变量
+					printf("rocket_air_sounding占用%d个字节\n",sizeof(T_ROCKET_AIR_SOUNDING));
+					global_bool.bool_get_rocket_air_sounding=TRUE;
+					decode_rocket_air_sounding_data(&rocket_air_sounding,(char *)_pack_recv_buf);
 
-
-					decode_air_sounding_data(&air_sounding_rocket,(char *)_pack_recv_buf);
-
-
-					global_bool.bool_get_rocket_ari_sounding=TRUE;
 #if 0
-					memcpy(&air_sounding_rocket, _pack_recv_buf, _pack_recv_len);
+					memcpy(&rocket_air_sounding, _pack_recv_buf, _pack_recv_len);
 					//设置了global_bool.bool_get_rocket_ari_sounding，接下来应该是解析数据包的
-					//但是因为air_sounding_rocket是数据接收包，所以没有解析，直接赋值给了&air_sounding_rocket
+					//但是因为rocket_air_sounding是数据接收包，所以没有解析，直接赋值给了&rocket_air_sounding
 					//但是游客能出现字节顺序不一致的情况，所以采用了下面的交换位置
 
 					//如果字节顺序是相反的，则使用下面方法
-					air_sounding_rocket.temp=__bswap_16(air_sounding_rocket.temp);
-					air_sounding_rocket.humidity=__bswap_16(air_sounding_rocket.humidity);
-					air_sounding_rocket.air_pressure=__bswap_16(air_sounding_rocket.air_pressure);
-					air_sounding_rocket.wind_speed=__bswap_16(air_sounding_rocket.wind_speed);
-					air_sounding_rocket.wind_dir=__bswap_16(air_sounding_rocket.wind_dir);
+					rocket_air_sounding.temp=__bswap_16(rocket_air_sounding.temp);
+					rocket_air_sounding.humidity=__bswap_16(rocket_air_sounding.humidity);
+					rocket_air_sounding.air_pressure=__bswap_16(rocket_air_sounding.air_pressure);
+					rocket_air_sounding.wind_speed=__bswap_16(rocket_air_sounding.wind_speed);
+					rocket_air_sounding.wind_dir=__bswap_16(rocket_air_sounding.wind_dir);
 
-					air_sounding_rocket.longitude=__bswap_32(air_sounding_rocket.longitude);
-					air_sounding_rocket.latitude=__bswap_32(air_sounding_rocket.latitude);
-					air_sounding_rocket.height=__bswap_32(air_sounding_rocket.height);
+					rocket_air_sounding.longitude=__bswap_32(rocket_air_sounding.longitude);
+					rocket_air_sounding.latitude=__bswap_32(rocket_air_sounding.latitude);
+					rocket_air_sounding.height=__bswap_32(rocket_air_sounding.height);
 #endif
 					rocket_recv_state = 0;
 					break;
@@ -351,7 +338,6 @@ int write_rocket_cmd(T_ROCKET *ptr_write_rocket)
 	buf[5]=0x00;
 
 	/*数据*/
-	//buf[6]=ptr_write_rocket->device_num;
 	buf[6]=0x02;
 	buf[7]=ptr_write_rocket->function_num;
 	buf[8]=ptr_write_rocket->information;
@@ -365,18 +351,18 @@ int write_rocket_cmd(T_ROCKET *ptr_write_rocket)
 	buf[14]='\0';
 	//printf("发送的=%s\n",buf);
 
-	send_uart_data(uart_fd[UART_ROCKET], (char *)buf, len);
+    uart_device.uart_name=UART_ROCKET;
+    send_uart_data(uart_device.uart_name, (char *)buf, len);
 	printf("发送的=%s\n",buf);
 
 	return 0;
 }
 
-int write_rocket_data(char *buf,int len)
+int write_rocket_data(unsigned char *buf,unsigned int len)
 {
 
     unsigned char send_buf[256]={0};
     int frame_len;//帧长度,参数len是数据长度
-    //unsigned char check=0;
     unsigned short check=0;
     int i;
 
@@ -385,7 +371,7 @@ int write_rocket_data(char *buf,int len)
         check+=buf[i];
     }
 
-    frame_len=len+4+2+2+4;//数据长度+4帧头+2长度+2校验+4帧尾
+    frame_len=len+4+2+2+4;//数据长度+帧头4+长度2+校验2+4帧尾
     //printf("rocket frame len=%d\n",frame_len);
 
     send_buf[0]=0xEB;
@@ -393,13 +379,12 @@ int write_rocket_data(char *buf,int len)
     send_buf[2]=0xEB;
     send_buf[3]=0xEB;
 
-    //send_buf[4]=len;
     send_buf[4]=frame_len;
     send_buf[5]=0x00;
 
     memcpy(&send_buf[6],buf,len);
 
-    //send_buf[len+6]=check;
+    //校验字节
     memcpy(&send_buf[len+6],&check,2);
 
     //帧尾
@@ -408,9 +393,9 @@ int write_rocket_data(char *buf,int len)
     send_buf[len+10]=0xEE;
     send_buf[len+11]=0xEE;
 
-
-    //send_uart_data(uart_fd[UART_ROCKET], (char *)send_buf, len);
-    send_uart_data(uart_fd[UART_ROCKET], (char *)send_buf, frame_len);
+    //send_uart_data(uart_fd[UART_ROCKET], (char *)send_buf, frame_len);
+    uart_device.uart_name=UART_ROCKET;
+    send_uart_data(uart_device.uart_name, (char *)buf, frame_len);//注意这里是frame_len也就是真正发送的字节长度
 #if 0
     for(i=0;i<frame_len;i++)
     {
@@ -435,7 +420,7 @@ int write_rocket_attitude()
 
     memcpy(send_buf,&rocket_attitude,sizeof(rocket_attitude));
 
-    write_rocket_data((char *)send_buf,sizeof(rocket_attitude));
+    write_rocket_data(send_buf,sizeof(rocket_attitude));
 
 	return 0;
 }
@@ -596,7 +581,6 @@ int reply_has_received_charge_done()
 #define rocket2pilot_has_down_into_sea 0x07
 #define rocket2pilot_please_repeat 0x08
 
-
 /*
  * 光是从rocket中read数据还是不够的，
  * 因为获取数据是原始数据，
@@ -651,9 +635,10 @@ int decode_rocket_command(T_ROCKET *ptr_read_rocket)
 	return 0;
 }
 
-int rocket_uart_close(unsigned int uart_num)
+int rocket_uart_close()
 {
-	close(uart_fd[uart_num]);
+    uart_device.uart_name=UART_ROCKET;
+    close_uart_dev(uart_device.uart_name);
 
 	return 0;
 }

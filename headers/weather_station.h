@@ -8,13 +8,11 @@
 #ifndef HEADERS_WEATHER_STATION_H_
 #define HEADERS_WEATHER_STATION_H_
 
-//#define UART_AWS 6///dev/ttyUSB0
-//#define UART_AWS 7///dev/ttyUSB1
-#define UART_AWS 5//
 #define UART_AWS_BAUD 9600
 #define UART_AWS_DATABITS 8 //8 data bit
 #define UART_AWS_STOPBITS 1 //1 stop bit
 #define UART_AWS_PARITY 0 //no parity
+
 #if 0
 //52 bytes
 typedef struct
@@ -97,23 +95,14 @@ typedef struct
 }T_AWS;
 #endif
 
-
-
-//AWS=air weather station 气象站
 extern T_AWS read_aws;
 
-
-int aws_uart_init(unsigned int uart_num);
+int aws_uart_init();
 /*
  * 获取从aws传回来的数据
  */
-int read_aws_data(T_AWS *ptr_read_aws,unsigned char *buf, unsigned int len);
-/*
- * 自驾仪给火箭设备发送命令
- */
-int write_aws_data(T_AWS *ptr_write_aws);
-
-int aws_uart_close(unsigned int uart_num);
-
+int read_aws_data(unsigned char *buf, unsigned int len);
+int write_aws_data(unsigned char *buf, unsigned int len);
+int aws_uart_close();
 
 #endif /* HEADERS_WEATHER_STATION_H_ */

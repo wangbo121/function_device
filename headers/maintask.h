@@ -18,7 +18,7 @@
 /*
  * execute every LOOP_FAST_TICK*MAINTASK_TICK_TIME ms
  */
-#define LOOP_FAST_TICK 15
+#define LOOP_FAST_TICK 17
 #define LOOP_SLOW_TICK 50
 #define LOOP_FOREVER_TICK 2
 
