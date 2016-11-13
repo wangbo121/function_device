@@ -29,6 +29,7 @@ extern T_GLOBAL_BOOL global_bool;
 
 #define __UART_ROCKET_
 #define __UART_AWS_
+#define __UART_MODBUS_
 #define __UDP_
 
 /*保存文件的文件名和文件句柄（文件描述符fd）*/

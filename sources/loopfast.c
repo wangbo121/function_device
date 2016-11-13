@@ -41,7 +41,7 @@ void loopfast(void)
 
         if((main_task.loopfast_cnt)%5==0)
         {
-            power_charge_loop(&query_power,&set_power,&read_power);
+            //power_charge_loop(&query_power,&set_power,&read_power);
         }
 
 		if(global_bool.bool_rocket_request_attitude)

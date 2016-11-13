@@ -91,7 +91,7 @@ int read_modbus_data(unsigned char *buf, unsigned int len)
 	unsigned short crc16=0;
 
 	memcpy(_buffer, buf, len);
-#if 1
+#if 0
 	for(i=0;i<len;i++)
 	{
 		printf("read modbus data is %x\n",_buffer[i]);
@@ -232,11 +232,12 @@ int send_modbus_data(unsigned char dev_id, unsigned char function_code, unsigned
 	//crc_16=exchange_short_high_low(crc_16);
 	send_buf[len+2] =(unsigned char)(crc_16 >> 8 & 0xFF);/*高位在前，先发送*/
 	send_buf[len+3] = (unsigned char)(crc_16 & 0x00FF);
-
+#if 1
 	for(i=0;i<len+4;i++)
 	{
-		//printf("send modbus data is %x\n",send_buf[i]);
+		printf("send modbus data is %x\n",send_buf[i]);
 	}
+#endif
 
 	modbus_need_to_send=clock_gettime_s();
 	delt_send_time_float=modbus_need_to_send-modbus_send;

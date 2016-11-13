@@ -26,6 +26,7 @@
 #include "utilityfunctions.h"
 #include "udp.h"
 
+#include "modbus_485.h"
 #include "modbus_power_supply.h"
 #include "modbus_toggle_discharge.h"
 
@@ -44,10 +45,20 @@ int main()
 	//start_launch_rocket();
 	write_rocket_attitude();
 #endif
+
 #ifdef __UART_AWS_
     aws_uart_init();
 	/*create log file*/
 	fd_air_weather_station_log=create_log_file(AIR_WEATHER_STATION);
+
+#endif
+
+#ifdef __UART_MODBUS_
+    /*
+     * 打开modbus串口中断，在modbus串口有数据后，
+     * 执行read_modbus_data
+     */
+    modbus_uart_init();
 
 #endif
 
