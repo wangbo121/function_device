@@ -178,7 +178,7 @@ int main()
             system_running_time=clock_gettime_s();
             printf("系统从开启到当前时刻运行的时间%f[s]\n",system_running_time);
         }
-
+#if 0
         /*loopforever 循环*/
         if(0 == main_task.maintask_cnt%LOOP_FOREVER_TICK)
         {
@@ -195,7 +195,7 @@ int main()
                 }
             }
         }
-
+#endif
         if(main_task.maintask_cnt>=MAX_MAINTASK_TICK)
         {
             main_task.maintask_cnt=0;
@@ -204,7 +204,9 @@ int main()
 
     pthread_join (loopfast_pthrd, NULL);
     pthread_join (loopslow_pthrd, NULL);
+#if 0
     pthread_join (loopforever_pthrd, NULL);
+#endif
 
 #else
     /*thread: maintask*/

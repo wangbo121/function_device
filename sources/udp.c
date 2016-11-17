@@ -114,7 +114,8 @@ int open_udp_dev(char* ip_sendto, int port_sendto, int port_myrecv)
     return 0;
 }
 
-#define UDP_RCV_BUF_SIZE 2000
+//#define UDP_RCV_BUF_SIZE 2000
+#define UDP_RCV_BUF_SIZE 512
 
 #define UDP_PACKET_HEAD 0xa55a5aa5
 int send_udp_data(unsigned char *buf, unsigned int len)
@@ -122,7 +123,8 @@ int send_udp_data(unsigned char *buf, unsigned int len)
     int m_head;
     int m_len;
     int ret=0;
-    unsigned char m_sendbuf[UDP_RCV_BUF_SIZE];
+    //unsigned char m_sendbuf[UDP_RCV_BUF_SIZE];
+    static unsigned char m_sendbuf[UDP_RCV_BUF_SIZE]={'\0'};
 
     static unsigned int m_packcnt = 0;
 
@@ -134,6 +136,7 @@ int send_udp_data(unsigned char *buf, unsigned int len)
     memcpy(&m_sendbuf[12], buf, len);
     m_len = 12 + len;
     ret = sendto(fd_sock_send, m_sendbuf, m_len, 0, (struct sockaddr *)&udp_sendto_addr, sizeof(struct sockaddr_in));
+    printf("发送的字节数=%d\n",ret);
 
     return 0;
 }
@@ -141,7 +144,7 @@ int send_udp_data(unsigned char *buf, unsigned int len)
 
 int read_udp_data(unsigned char *buf, unsigned int len)
 {
-    static unsigned char _buffer[UDP_RCV_BUF_SIZE];
+    static unsigned char _buffer[UDP_RCV_BUF_SIZE]={'\0'};
 #if 0
     static unsigned char _pack_recv_type;
     static int _pack_recv_cnt = 0;

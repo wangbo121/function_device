@@ -15,12 +15,14 @@
 
 #include "modbus_power_supply.h"
 #include "modbus_toggle_discharge.h"
+#include "utilityfunctions.h"
 
 sem_t sem_loopfast;
 
 void loopfast(void)
 {
 	printf("Enter the loopfast...\n");
+	float toggle_time=0.0;
 
 	while(main_task.loopfast_permission)
 	{
@@ -31,6 +33,9 @@ void loopfast(void)
 		 */
 
         /*切换器开始切换电池放电*/
+		toggle_time=clock_gettime_s();
+		printf("发送切换器查询时间=%f\n",toggle_time);
+		//发现是下面的语句导致内存溢出，那到底为什么呢？
         toggle_discharge_loop(&query_toggle,&set_toggle,&read_toggle);
 
         /*

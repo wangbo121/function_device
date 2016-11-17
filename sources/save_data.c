@@ -52,7 +52,10 @@ int save_data_to_log(int fd_log,char *string,int len)
 
 	if(fd_log)
 	{
-		write_len=write(fd_log,string,len);
+		if(-1==(write_len=write(fd_log,string,len)))
+		{
+		    printf("write error!\n");
+		}
 	}
 
 	return write_len;

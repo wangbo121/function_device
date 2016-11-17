@@ -196,24 +196,26 @@ int toggle_discharge_loop(struct T_TOGGLE *ptr_query_toggle,\
 		    if(ptr_read_toggle->battery0_voltage>120)
 		    //if(ptr_read_toggle->battery0_voltage>3000)
 		    {
+		        printf("切换器电池1电压=%u\n",ptr_read_toggle->battery0_voltage);
 		        //printf("ptr_read_toggle->battery0_voltage>3000\n");
 		        ptr_set_toggle->charging_state=(ptr_set_toggle->charging_state & 0xFF00) | 0x00AA;
                 write_set_toggle_discharge(ptr_set_toggle, TOGGLE_CHARGING_STATE);
 
                 if(global_bool_modbus.toggle_battery0_is_discharging)
                 {
-                    //如果正在放电，则不再发送命令
+                    //如果电池1正在放电，则不再发送命令
                 }
                 else
                 {
-                    //如果没有在放电，就切换到1
-                    printf("如果没有在放电，就切换到1\n");
+                    //如果没有在放电，就切换
+                    printf("如果电池1没有在放电，就切换到电池1\n");
                     printf("*********************************************\n");
                     printf("*********************************************\n");
                     printf("*********************************************\n");
 
                     set_toggle.discharge_num=0x0001;
                     //set_toggle.discharge_num=0x0002;
+                    //去掉下面这一句，仍然有错误，电池来回切换的时候会有错误，没有查到为什么
                     write_set_toggle_discharge(ptr_set_toggle, TOGGLE_DISCHARGE_NUM);
                     global_bool_modbus.toggle_battery0_is_discharging=TRUE;
                 }
@@ -458,7 +460,7 @@ int read_toggle_data(struct T_TOGGLE *ptr_read_toggle, unsigned char buf[], unsi
 	{
 		global_bool_modbus.query_toggle_battery_vol1=FALSE;
 
-		//printf("切换器电池0电压=%d\n",data);
+		//printf("切换器电池1电压=%d\n",data);
 		ptr_read_toggle->battery1_voltage=(unsigned short)((float)data*0.1);
 		//printf("ptr_read_toggle->battery1_voltage=%d\n",ptr_read_toggle->battery1_voltage);
 		//printf("ptr_read_toggle->battery1_voltage=%x\n",ptr_read_toggle->battery1_voltage);
